@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Solitaire
  *
- * Copyright (C) 2016 by Martin P. Robillard
+ * Copyright (C) 2016-2018 by Martin P. Robillard
  *
  * See: https://github.com/prmr/Solitaire
  *
@@ -20,48 +20,40 @@
  *******************************************************************************/
 package ca.mcgill.cs.stg.solitaire.cards;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Stack;
-
-import ca.mcgill.cs.stg.solitaire.cards.Card.Rank;
-import ca.mcgill.cs.stg.solitaire.cards.Card.Suit;
+import java.util.List;
 
 /**
  * Models a deck of 52 cards.
  */
 public class Deck 
 {
-	private Stack<Card> aCards;
+	private CardStack aCards;
 	
 	/**
 	 * Creates a new deck of 52 cards, shuffled.
 	 */
 	public Deck()
 	{
-		aCards = new Stack<Card>();
-		reset();
 		shuffle();
 	}
 	
-	private void reset()
-	{
-		aCards.clear();
-		for( Suit lSuit : Suit.values() )
-		{
-            for( Rank lRank : Rank.values() )
-            {
-                aCards.add( Card.get( lRank, lSuit ));
-            }
-		}
-	}
-
 	/**
-	 * Shuffles the deck.
+	 * Reinitializes the deck with all 52 cards, and shuffles them.
 	 */
 	public void shuffle()
 	{
-		reset();
-		Collections.shuffle( aCards );
+		List<Card> cards = new ArrayList<>();
+		for( Suit suit : Suit.values() )
+		{
+            for( Rank rank : Rank.values() )
+            {
+                cards.add( Card.get( rank, suit ));
+            }
+		}
+		Collections.shuffle(cards);
+		aCards = new CardStack(cards);
 	}
 	
 	/**
@@ -79,20 +71,19 @@ public class Deck
 	/**
 	 * Draws a card from the deck and removes the card from the deck.
 	 * @return The card drawn.
-	 * @pre initial.size() > 0
-	 * @post final.size() == initial.size() - 1
+	 * @pre !isEmpty()
 	 */
 	public Card draw()
 	{
-		assert size() > 0;
+		assert !isEmpty();
 		return aCards.pop();
 	}
 	
 	/**
-	 * @return The number of cards in the deck.
+	 * @return True iff there are no cards in the deck.
 	 */
-	public int size()
+	public boolean isEmpty()
 	{
-		return aCards.size();
+		return aCards.isEmpty();
 	}
 }

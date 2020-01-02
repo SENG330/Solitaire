@@ -22,9 +22,10 @@ package ca.mcgill.cs.stg.solitaire.gui;
 
 import ca.mcgill.cs.stg.solitaire.cards.Card;
 import ca.mcgill.cs.stg.solitaire.cards.CardImages;
+import ca.mcgill.cs.stg.solitaire.cards.CardStack;
 import ca.mcgill.cs.stg.solitaire.model.GameModel;
-import ca.mcgill.cs.stg.solitaire.model.GameModel.StackIndex;
 import ca.mcgill.cs.stg.solitaire.model.GameModelListener;
+import ca.mcgill.cs.stg.solitaire.model.TableauPile;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -42,14 +43,14 @@ import javafx.scene.layout.StackPane;
  * Component that shows a stack of cards in 
  * the bottom stacks.
  */
-public class CardStack extends StackPane implements GameModelListener
+public class CardPileView extends StackPane implements GameModelListener
 {
 	private static final int PADDING = 5;
 	private static final int Y_OFFSET = 17;
 	
-	private StackIndex aIndex;
+	private TableauPile aIndex;
 	
-	CardStack(StackIndex pIndex)
+	CardPileView(TableauPile pIndex)
 	{
 		aIndex = pIndex;
 		setPadding(new Insets(PADDING));
@@ -60,7 +61,7 @@ public class CardStack extends StackPane implements GameModelListener
 	
 	private static Image getImage(Card pCard)
 	{
-		if( GameModel.instance().isVisibleInWorkingStack(pCard) )
+		if( GameModel.instance().isVisibleInTableau(pCard) )
 		{
 			return CardImages.getCard(pCard);
 		}
@@ -75,8 +76,8 @@ public class CardStack extends StackPane implements GameModelListener
 		getChildren().clear();
 		
 		int offset = 0;
-		Card[] stack = GameModel.instance().getStack(aIndex);
-		if( stack.length == 0 ) // this essentially acts as a spacer
+		CardStack stack = GameModel.instance().getTableauPile(aIndex);
+		if( stack.isEmpty() ) // this essentially acts as a spacer
 		{
 			ImageView image = new ImageView(CardImages.getBack());
 			image.setVisible(false);
@@ -96,7 +97,7 @@ public class CardStack extends StackPane implements GameModelListener
     		setOnDragExited(createDragExitedHandler(image, cardView));
     		setOnDragDropped(createDragDroppedHandler(image, cardView));
     		
-        	if( GameModel.instance().isVisibleInWorkingStack(cardView))
+        	if( GameModel.instance().isVisibleInTableau(cardView))
         	{
         		image.setOnDragDetected(createDragDetectedHandler(image, cardView));
         	}
@@ -123,6 +124,7 @@ public class CardStack extends StackPane implements GameModelListener
 	{
 		return new EventHandler<DragEvent>()
 		{
+			@Override
 			public void handle(DragEvent pEvent) 
 			{
 				if(pEvent.getGestureSource() != pImageView && pEvent.getDragboard().hasString())
@@ -142,6 +144,7 @@ public class CardStack extends StackPane implements GameModelListener
 	{
 		return new EventHandler<DragEvent>()
 		{
+			@Override
 			public void handle(DragEvent pEvent)
 			{
 				CardTransfer transfer = new CardTransfer(pEvent.getDragboard().getString());
@@ -158,6 +161,7 @@ public class CardStack extends StackPane implements GameModelListener
 	{
 		return new EventHandler<DragEvent>()
 		{
+			@Override
 			public void handle(DragEvent pEvent)
 			{
 				pImageView.setEffect(null);
@@ -170,6 +174,7 @@ public class CardStack extends StackPane implements GameModelListener
 	{
 		return new EventHandler<DragEvent>() 
 		{
+			@Override
 			public void handle(DragEvent pEvent)
 			{
 				Dragboard db = pEvent.getDragboard();

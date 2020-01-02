@@ -22,161 +22,161 @@ package ca.mcgill.cs.stg.solitaire.ai;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import ca.mcgill.cs.stg.solitaire.cards.Card;
-import ca.mcgill.cs.stg.solitaire.model.GameModel.StackIndex;
-import ca.mcgill.cs.stg.solitaire.model.GameModel.SuitStackIndex;
+import ca.mcgill.cs.stg.solitaire.cards.CardStack;
+import ca.mcgill.cs.stg.solitaire.model.FoundationPile;
 import ca.mcgill.cs.stg.solitaire.model.GameModelView;
 import ca.mcgill.cs.stg.solitaire.model.Move;
+import ca.mcgill.cs.stg.solitaire.model.TableauPile;
 
 /**
  * Makes the first possible move in this order: 
- * 0. Discarding if the discard pile is empty
- * 1. Moving a card from the discard pile to a suit stack
- * 2. Moving a card from the discard pile to a working stack
- * 3. Moving a card from a working stack to a suit stack, in order
- * of working stacks.
- * 4. Moving from a working stack to another, if this either reveals
- * a fresh card or frees up a spot for a kind.
- * 5. If no moves are possible, discards.
+ * 1. Discarding if the discard pile is empty;
+ * 2. Moving a card from the discard pile to a foundation pile;
+ * 3. Moving a card from the discard pile to the tableau;
+ * 4. Moving a card from the tableau to a foundation pile, in order
+ * of piles;
+ * 5. Moving from one pile in the tableau to another, if this either reveals
+ * a fresh card or frees up a pile for a king.
+ * 6. None of the above was possible, discards if possible.
+ * 7. If discarding was not possible, return the null move.
  */
 public class GreedyPlayingStrategy implements PlayingStrategy
 {
-	// CSOFF:
-	@Override 
-	public Move computeNextMove(GameModelView pModel)
+	private static final List<Function<GameModelView, Move>> SUBSTRATEGIES = new ArrayList<>();
+
+	static
 	{
-		if( pModel.isEmptyDiscardPile() && !pModel.isEmptyDeck() )
+		SUBSTRATEGIES.add(GreedyPlayingStrategy::substrategyDiscardIfDiscardPileIsEmpty);
+		SUBSTRATEGIES.add(GreedyPlayingStrategy::substrategyMoveDiscardToFoundation);
+		SUBSTRATEGIES.add(GreedyPlayingStrategy::substrategyMoveDiscardToTableau);
+		SUBSTRATEGIES.add(GreedyPlayingStrategy::substrategyMoveFromTableauToFoundation);
+		SUBSTRATEGIES.add(GreedyPlayingStrategy::substrategyMoveWithinTableau);
+		SUBSTRATEGIES.add(GreedyPlayingStrategy::substrategyDiscard);
+	}
+	
+	/*
+	 * If the discard pile is empty, discard. 
+	 */
+	private static Move substrategyDiscardIfDiscardPileIsEmpty(GameModelView pModel)
+	{
+		if( pModel.isDiscardPileEmpty() && !pModel.isDeckEmpty() )
 		{
 			return pModel.getDiscardMove();
 		}
 		else
 		{
-			ArrayList<Move> moves = new ArrayList<>();
-			moves.addAll(movesFromWorkingStacksRevealsCard(pModel));
-			if( moves.size() > 0 )
-			{
-				return moves.get(0);
-			}
-			moves.addAll(movesFromDiscardPileToSuitStack(pModel));
-			if( moves.size() > 0 )
-			{
-				return moves.get(0);
-			}
-			moves.addAll(movesFromDiscardPileToWorkingStacks(pModel));
-			if( moves.size() > 0 )
-			{
-				return moves.get(0);
-			}
-			moves.addAll(movesFromWorkingStacksToSuitStacks(pModel));
-			if( moves.size() > 0 )
-			{
-				return moves.get(0);
-			}
-			
-			if( !pModel.isEmptyDeck() )
-			{
-				return pModel.getDiscardMove();
-			}
-			else
-			{
-				return pModel.getNullMove();
-			}
+			return pModel.getNullMove();
 		}
-	} // CSON:
-	
-	private List<Move> movesFromDiscardPileToSuitStack(GameModelView pModel)
-	{
-		ArrayList<Move> moves = new ArrayList<>();
-		if( !pModel.isEmptyDiscardPile())
-		{
-			for(SuitStackIndex index : SuitStackIndex.values())
-			{
-				if( pModel.isLegalMove(pModel.peekDiscardPile(), index))
-				{
-					moves.add(pModel.getCardMove(pModel.peekDiscardPile(), index));
-					if( pModel.isEmptySuitStack(index))
-					{
-						break; // we take the first possible blank space
-					}
-				}
-		}}
-		return moves;
 	}
 	
-	private List<Move> movesFromDiscardPileToWorkingStacks(GameModelView pModel)
+	/*
+	 * If it's possible to move the top of the discard pile to the foundation, do it.
+	 */
+	private static Move substrategyMoveDiscardToFoundation(GameModelView pModel)
 	{
-		ArrayList<Move> moves = new ArrayList<>();
-		if( !pModel.isEmptyDiscardPile() )
+		if( pModel.isDiscardPileEmpty() )
 		{
-			for(StackIndex index : StackIndex.values())
+			return pModel.getNullMove();
+		}
+		for(FoundationPile pile : FoundationPile.values())
+		{
+			if( pModel.isLegalMove(pModel.peekDiscardPile(), pile))
 			{
-				if( pModel.isLegalMove(pModel.peekDiscardPile(), index))
-				{
-					moves.add(pModel.getCardMove(pModel.peekDiscardPile(), index));
-				}
+				return pModel.getCardMove(pModel.peekDiscardPile(), pile);
 			}
 		}
-		return moves;
+		return pModel.getNullMove();
 	}
 	
-	private List<Move> movesFromWorkingStacksToSuitStacks(GameModelView pModel)
+	private static Move substrategyMoveDiscardToTableau(GameModelView pModel)
 	{
-		ArrayList<Move> moves = new ArrayList<>();
-		for(StackIndex index : StackIndex.values())
+		if( pModel.isDiscardPileEmpty() )
 		{
-			Card[] stack = pModel.getStack(index);
-			if( stack.length > 0 )
+			return pModel.getNullMove();
+		}
+		for(TableauPile pile : TableauPile.values())
+		{
+			if( pModel.isLegalMove(pModel.peekDiscardPile(), pile))
 			{
-				Card card = stack[stack.length-1];
-				for(SuitStackIndex index2 : SuitStackIndex.values())
+				return pModel.getCardMove(pModel.peekDiscardPile(), pile);
+			}
+		}
+		return pModel.getNullMove();
+	}
+	
+	private static Move substrategyMoveFromTableauToFoundation(GameModelView pModel)
+	{
+		for(TableauPile tableauPile : TableauPile.values())
+		{
+			CardStack stack = pModel.getTableauPile(tableauPile);
+			if( !stack.isEmpty() )
+			{
+				Card card = stack.peek();
+				for(FoundationPile foundationPile : FoundationPile.values())
 				{
-					if( pModel.isLegalMove(card, index2))
+					if( pModel.isLegalMove(card, foundationPile))
 					{
-						moves.add(pModel.getCardMove(card, index2));
-						if( pModel.isEmptySuitStack(index2))
-						{
-							break; // we take the first possible blank space
-						}
+						return pModel.getCardMove(card, foundationPile);
 					}
 				}
 			}	
 		}
-		return moves;
+		return pModel.getNullMove();
 	}
 	
-	private List<Move> movesFromWorkingStacksRevealsCard(GameModelView pModel)
+	/* Only if it reveals a card or empties a pile. We also don't move kings between empty piles */
+	private static Move substrategyMoveWithinTableau(GameModelView pModel)
 	{
-		ArrayList<Move> moves = new ArrayList<>();
-		for(StackIndex index : StackIndex.values())
+		for( TableauPile pile : TableauPile.values())
 		{
-			Card[] stack = pModel.getStack(index);
-			for(int i = 0; i < stack.length; i++ )
+			CardStack stack = pModel.getTableauPile(pile);
+			for( Card card : stack )
 			{
-				if( pModel.isVisibleInWorkingStack(stack[i]) && i > 0 && !pModel.isVisibleInWorkingStack(stack[i-1]) )
+				if( pModel.isBottomKing(card))
 				{
-					for( StackIndex index2 : StackIndex.values() )
-					{
-						if( pModel.isLegalMove(stack[i], index2))
-						{
-							moves.add(pModel.getCardMove(stack[i], index2));
-						}
-					}
+					continue;
 				}
-				else if( pModel.isVisibleInWorkingStack(stack[i]) && i == 0 )
+				if( pModel.isLowestVisibleInTableau(card))
 				{
-					for( StackIndex index2 : StackIndex.values() )
+					for( TableauPile pile2 : TableauPile.values() )
 					{
-						// we don't want to just move a card around
-						if( pModel.isLegalMove(stack[i], index2) && pModel.getStack(index2).length > 0) 
+						if( pModel.isLegalMove(card, pile2))
 						{
-							moves.add(pModel.getCardMove(stack[i], index2));
+							return pModel.getCardMove(card, pile2);
 						}
 					}
 				}
 			}
 		}
-		
-		return moves;
+		return pModel.getNullMove();
+	}
+	
+	private static Move substrategyDiscard(GameModelView pModel)
+	{
+		if( pModel.isDeckEmpty() )
+		{
+			return pModel.getNullMove();
+		}
+		else
+		{
+			return pModel.getDiscardMove();
+		}
+	}
+	
+	@Override
+	public Move getLegalMove(GameModelView pModel)
+	{
+		for( Function<GameModelView, Move> substrategy : SUBSTRATEGIES )
+		{
+			Move move = substrategy.apply(pModel);
+			if( !move.isNull() )
+			{
+				return move;
+			}
+		}
+		return pModel.getNullMove();
 	}
 }

@@ -21,9 +21,7 @@
 package ca.mcgill.cs.stg.solitaire.model;
 
 import ca.mcgill.cs.stg.solitaire.cards.Card;
-import ca.mcgill.cs.stg.solitaire.model.GameModel.Location;
-import ca.mcgill.cs.stg.solitaire.model.GameModel.StackIndex;
-import ca.mcgill.cs.stg.solitaire.model.GameModel.SuitStackIndex;
+import ca.mcgill.cs.stg.solitaire.cards.CardStack;
 
 /**
  * A read-only version of a game model.
@@ -33,18 +31,18 @@ public interface GameModelView
 	/**
 	 * @return True if the discard pile has no card in it.
 	 */
-	boolean isEmptyDiscardPile();
+	boolean isDiscardPileEmpty();
 	
 	/**
 	 * @return True if the deck has no card left in it.
 	 */
-	boolean isEmptyDeck();
+	boolean isDeckEmpty();
 	
 	/**
 	 * @param pIndex The suit stack to check
 	 * @return True if the suit stack for pSuit is empty
 	 */
-	boolean isEmptySuitStack(SuitStackIndex pIndex);
+	boolean isFoundationPileEmpty(FoundationPile pIndex);
 	
 	/**
 	 * @return The card on top of the discard pile.
@@ -56,14 +54,29 @@ public interface GameModelView
 	 * @param pIndex The position of the stack to return.
 	 * @return A copy of the stack at position pIndex
 	 */
-	Card[] getStack(StackIndex pIndex);
+	CardStack getTableauPile(TableauPile pIndex);
 	
 	/**
 	 * @param pCard A card to test for visibility.
 	 * @return True if the card's value is visible in
-	 * a working stack.
+	 * the tableau;
 	 */
-	boolean isVisibleInWorkingStack(Card pCard);
+	boolean isVisibleInTableau(Card pCard);
+	
+	/**
+	 * @param pCard The card to test
+	 * @return True if pCard is in the tableau and is 
+	 * the lowest card visible in its pile, including 
+	 * the case where it's the only card in the pile.
+	 */
+	boolean isLowestVisibleInTableau(Card pCard);
+	
+	/**
+	 * @param pCard The card to check.
+	 * @return True if pCard is a visible king located at the bottom of the pile.
+	 * @pre pCard != null && contains(pCard);
+	 */
+	boolean isBottomKing(Card pCard);
 	
 	/**
 	 * Determines if pCard can be moved to pLocation
