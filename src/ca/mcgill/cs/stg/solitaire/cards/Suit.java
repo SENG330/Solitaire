@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Solitaire
  *
- * Copyright (C) 2016 by Martin P. Robillard
+ * Copyright (C) 2016-2018 by Martin P. Robillard
  *
  * See: https://github.com/prmr/Solitaire
  *
@@ -18,25 +18,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *******************************************************************************/
-package ca.mcgill.cs.stg.solitaire.ai;
-
-import ca.mcgill.cs.stg.solitaire.model.GameModelView;
-import ca.mcgill.cs.stg.solitaire.model.Move;
+package ca.mcgill.cs.stg.solitaire.cards;
 
 /**
- * Game-playing behavior. Implementations of this interface
- * are responsible for ensuring that the sequence of Move 
- * instances returned does not put the game in and endless
- * cycle.
+ * Represents the suit of a playing card.
  */
-public interface PlayingStrategy
-{
+public enum Suit 
+{ 
+	CLUBS, DIAMONDS, HEARTS, SPADES; 
+	
 	/**
-	 * Returns a legal move for the game, or the 
-	 * Null move if that is not possible.
-	 * 
-	 * @param pModel A game model to query.
-	 * @return The move computed.
+	 * @param pSuit The suit to test against.
+	 * @return True if this suit and pSuit are of the same color.
+	 * @pre pSuit != null;
 	 */
-	Move getLegalMove(GameModelView pModel);
+	public boolean sameColorAs(Suit pSuit)
+	{
+		assert pSuit != null;
+		if( this == CLUBS || this == SPADES )
+		{
+			return pSuit == CLUBS || pSuit == SPADES;
+		}
+		else
+		{
+			return pSuit == DIAMONDS || pSuit == HEARTS;
+		}
+	}
 }
